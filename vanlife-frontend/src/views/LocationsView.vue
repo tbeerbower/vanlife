@@ -1,6 +1,5 @@
 <template>
     <div class="locations-view">
-        <h1>Locations</h1>
         <div class="map-section">
             <MapComponent 
                 :locations="locations" 
@@ -87,30 +86,34 @@ export default {
 
 <style scoped>
 .locations-view {
-    padding: 20px;
+    grid-template-columns: 2fr 1fr;
+    grid-template-areas: "map grid";
+    display: grid;
+    gap: 20px;
+    height: 75vh
+
 }
 
 .map-section {
+    grid-area: map;
     margin-bottom: 20px;
-    max-width: 800px;
-    margin: 0 auto 20px;
+   max-height: 100%;
 }
 
 .locations-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    max-width: 800px;
-    margin: 0 auto;
+    overflow-y: auto;
+    grid-area: grid;
+    max-height: 100%;
 }
 
 .location-card {
-    display: flex;
-    background: white;
+    background: linen;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease;
+    margin-top: 7px;
+    margin-right: 7px;
 }
 
 .location-card:hover {

@@ -128,14 +128,13 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   padding: 20px;
   background-color: #2d3436;
   color: #dfe6e9;
 }
 
 .vanlife-logo {
-  width: 400px;
+  width: 200px;
   margin-bottom: 20px;
   filter: drop-shadow(0 0 8px rgba(116, 185, 255, 0.3));
 }

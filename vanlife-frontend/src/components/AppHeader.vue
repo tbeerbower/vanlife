@@ -1,9 +1,8 @@
 <template>
-  <header class="app-header">
+  <header class="app-header" style="width: 100%; z-index: 10000;">
     <nav>
       <router-link to="/" class="brand">
-        <img src="@/assets/vanlife.webp
-        " alt="Vanlife Logo" class="logo">
+        <img src="@/assets/vanlife.webp" alt="Vanlife Logo" class="logo">
         <span>Van Life</span>
       </router-link>
       <div class="nav-links">
