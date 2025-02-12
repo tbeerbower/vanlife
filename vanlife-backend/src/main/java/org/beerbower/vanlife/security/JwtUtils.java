@@ -10,14 +10,14 @@ import java.util.Date;
 
 public class JwtUtils {
 
-    public static String createJwt(User user, String jwtSecret) {
+    public static String createJwt(User user, String jwtSecret, long jwtExpiration) {
         Key key = new SecretKeySpec(jwtSecret.getBytes(), SignatureAlgorithm.HS256.getJcaName());
 
         return Jwts.builder()
                 .setSubject(user.getEmail())
                 .setIssuer("org.tbeerbower")
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + (1000 * 60 * 60))) // 1 hour
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(key)
                 .claim("auth", user.getRoles())
                 .compact();

@@ -30,6 +30,9 @@ public class LoginController {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    @Value("${jwt.expiration}")
+    private long jwtExpiration ;
+
     @PostMapping
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         // Find user by email
@@ -44,7 +47,7 @@ public class LoginController {
         }
 
         // Generate JWT
-        String jwt = JwtUtils.createJwt(user, jwtSecret);
+        String jwt = JwtUtils.createJwt(user, jwtSecret, jwtExpiration);
 
         return ResponseEntity.ok(new LoginResponse(jwt, user));
     }

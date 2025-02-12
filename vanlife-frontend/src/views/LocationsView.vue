@@ -3,11 +3,17 @@
         <div class="map-section">
             <MapComponent 
                 :locations="locations" 
+                @location-click="handleLocationClick"
                 @refresh-locations="fetchLocationsInBounds"
             />
         </div>
         <div class="locations-grid">
-            <div v-for="location in locations" :key="location.id" class="location-card">
+            <div 
+                v-for="location in locations" 
+                :key="location.id" 
+                class="location-card"
+                @click="navigateToLocation(location.id)"
+            >
                 <div class="location-image" :style="{ backgroundImage: `url(${location.photoUrls?.[0] || '/placeholder-image.jpg'})` }"></div>
                 <div class="location-content">
                     <h2>{{ location.name }}</h2>
@@ -76,7 +82,13 @@ export default {
             if (!ratings || ratings.length === 0) return 0;
             const sum = ratings.reduce((acc, rating) => acc + rating.score, 0);
             return sum / ratings.length;
-        }
+        },
+        handleLocationClick(locationId) {
+            this.navigateToLocation(locationId);
+        },
+        navigateToLocation(locationId) {
+            this.$router.push({ name: 'LocationView', params: { id: locationId } });
+        },
     },
     created() {
         this.fetchLocations();
@@ -89,9 +101,9 @@ export default {
     grid-template-columns: 2fr 1fr;
     grid-template-areas: "map grid";
     display: grid;
-    gap: 20px;
-    height: 75vh
-
+    gap: 10px;
+    height: 75vh;
+    padding-top: 10px;
 }
 
 .map-section {
@@ -112,7 +124,7 @@ export default {
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease;
-    margin-top: 7px;
+    margin-bottom: 7px;
     margin-right: 7px;
 }
 

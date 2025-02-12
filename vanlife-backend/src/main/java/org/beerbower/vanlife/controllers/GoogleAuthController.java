@@ -52,6 +52,9 @@ public class GoogleAuthController {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    @Value("${jwt.expiration}")
+    private long jwtExpiration ;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -80,7 +83,7 @@ public class GoogleAuthController {
                 // Step 2: Verify ID token
                 User user = verifyIdToken(idToken);
                 // Step 3: Create JWT
-                String jwt = JwtUtils.createJwt(user, jwtSecret);
+                String jwt = JwtUtils.createJwt(user, jwtSecret, jwtExpiration);
                 // Step 4: Return JWT to frontend
                 GoogleAuthResponse authResponse = new GoogleAuthResponse(jwt, user);
                 return ResponseEntity.ok().body(authResponse);

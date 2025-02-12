@@ -1,5 +1,5 @@
 <template>
-  <div class="map-container" style="padding-top: 60px;">
+  <div class="map-container">
     <div class="map-overlay">
       <button 
         v-show="boundsChanged"
@@ -11,8 +11,9 @@
     </div>
     <l-map 
       ref="map" 
-      v-model:zoom="zoom"
-      v-model:center="mapCenter"
+      :zoom="zoom"
+      :center="initialCenter"
+      @ready="initializeMap"
       @update:bounds="onBoundsUpdated"
     >
       <l-tile-layer :url="tileLayerUrl" :attribution="attribution"></l-tile-layer>
@@ -67,36 +68,71 @@ export default {
   data() {
     return {
       zoom: 13,
-      mapCenter: [40.0516, -76.3057], // Default center (Lancaster Travel Plaza)
       tileLayerUrl: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       boundsChanged: false,
       currentBounds: null,
       initialBoundsSet: false
     };
   },
   computed: {
-    defaultCenter() {
+    initialCenter() {
       if (this.locations.length === 0) {
-        return [40.0516, -76.3057];
+        return [40.0516, -76.3057]; // Default center
       }
       
-      // Calculate the center of all locations
       const lats = this.locations.map(loc => loc.latitude);
       const lngs = this.locations.map(loc => loc.longitude);
-      
       const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
       const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-      
       return [centerLat, centerLng];
     }
   },
+  mounted() {
+  },
   methods: {
-    onBoundsUpdated(bounds) {
-      console.log('Bounds updated:', bounds); // Debug log
+    calculateBoundsWithBuffer(locations) {
+      // Get min and max coordinates
+      const lats = locations.map(loc => loc.latitude);
+      const lngs = locations.map(loc => loc.longitude);
       
-      if (!bounds) return;
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      
+      // Calculate the range of coordinates
+      const latRange = maxLat - minLat;
+      const lngRange = maxLng - minLng;
+      
+      // Add a buffer (10% of the range)
+      const latBuffer = Math.max(latRange * 0.1, 0.01); // minimum buffer of 0.01 degrees
+      const lngBuffer = Math.max(lngRange * 0.1, 0.01);
+      
+      return {
+        southWest: [minLat - latBuffer, minLng - lngBuffer],
+        northEast: [maxLat + latBuffer, maxLng + lngBuffer]
+      };
+    },
+    
+    initializeMap() {
+      this.$nextTick(() => {
+        const map = this.$refs.map?.leafletObject;
+        if (!map || this.locations.length === 0) return;
+
+        const bounds = this.calculateBoundsWithBuffer(this.locations);
+        const latLngBounds = L.latLngBounds(
+          bounds.southWest,
+          bounds.northEast
+        );
+        
+        map.fitBounds(latLngBounds);
+        this.initialBoundsSet = true;
+      });
+    },
+    
+    onBoundsUpdated(bounds) {
+      if (!bounds || !this.initialBoundsSet) return;
 
       this.currentBounds = {
         minLat: bounds._southWest.lat,
@@ -104,42 +140,18 @@ export default {
         minLng: bounds._southWest.lng,
         maxLng: bounds._northEast.lng
       };
-      
-      // Only show the refresh button if this isn't the initial bounds setting
-      if (this.initialBoundsSet) {
-        console.log('Setting boundsChanged to true'); // Debug log
-        this.boundsChanged = true;
-      } else {
-        console.log('Setting initialBoundsSet to true'); // Debug log
-        this.initialBoundsSet = true;
-      }
+      this.boundsChanged = true;
     },
+    
     refreshLocations() {
-      console.log('Refreshing locations with bounds:', this.currentBounds); // Debug log
       this.$emit('refresh-locations', this.currentBounds);
       this.boundsChanged = false;
     }
   },
   watch: {
     locations: {
-      handler(newLocations) {
-        if (newLocations.length > 0 && !this.initialBoundsSet) {
-          // Only fit bounds on initial load
-          this.$nextTick(() => {
-            const map = this.$refs.map?.leafletObject;
-            if (map) {
-              const bounds = L.latLngBounds(
-                newLocations.map(location => [location.latitude, location.longitude])
-              );
-              map.fitBounds(bounds, { padding: [50, 50] });
-              this.initialBoundsSet = true;
-              // Update the center after fitting bounds
-              this.mapCenter = this.defaultCenter;
-            }
-          });
-        }
-        // Always reset the boundsChanged flag when new locations are loaded
-        this.boundsChanged = false;
+      handler() {
+        this.initializeMap();
       },
       immediate: true
     }
