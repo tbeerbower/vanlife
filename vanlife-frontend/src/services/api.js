@@ -25,4 +25,18 @@ api.interceptors.response.use(
   }
 )
 
+// Comment endpoints
+export const addComment = async (locationId, text, rating) => {
+  const response = await api.post(`/locations/${locationId}/comments`, {
+    text,
+    rating
+  });
+  return response.data;
+};
+
+export const getLocationComments = async (locationId) => {
+  const response = await api.get(`/locations/${locationId}/comments`);
+  return response.data;
+};
+
 export default api

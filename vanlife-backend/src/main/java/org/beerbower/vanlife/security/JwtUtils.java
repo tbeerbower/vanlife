@@ -15,8 +15,9 @@ public class JwtUtils {
 
         return Jwts.builder()
                 .setSubject(user.getEmail())
-                .setIssuer("org.tbeerbower")
+                .setIssuer("org.beerbower")
                 .setIssuedAt(new Date())
+
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(key)
                 .claim("auth", user.getRoles())
