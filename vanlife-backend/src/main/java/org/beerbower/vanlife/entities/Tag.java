@@ -11,7 +11,7 @@ import java.util.Set;
 @Entity
 public class Tag {
     public enum Type {
-        SERVICE, ACTIVITY, AMENITY, OTHER;
+        SERVICE, ACTIVITY, AMENITY, HIGHWAY, TOURISM, OTHER;
     }
 
     @Id

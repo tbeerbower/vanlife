@@ -1,19 +1,27 @@
 package org.beerbower.vanlife.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.beerbower.vanlife.entities.Comment;
 import org.beerbower.vanlife.entities.Location;
+import org.beerbower.vanlife.entities.Tag;
 import org.beerbower.vanlife.entities.User;
+import org.beerbower.vanlife.entities.overpass.Node;
 import org.beerbower.vanlife.repositories.CommentRepository;
 import org.beerbower.vanlife.repositories.LocationRepository;
 import org.beerbower.vanlife.repositories.UserRepository;
 import org.beerbower.vanlife.services.LocationService;
+import org.beerbower.vanlife.services.overpass.OverpassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -29,6 +37,8 @@ public class LocationController {
     private UserRepository userRepository;
     @Autowired
     private CommentRepository commentRepository;
+    @Autowired
+    OverpassService overpassService;
 
     // Create a new location
     @PostMapping
@@ -46,7 +56,15 @@ public class LocationController {
             @RequestParam(required = false) Double maxLon) {
         List<Location> locations;
         if (minLat != null && maxLat != null && minLon != null && maxLon != null) {
-            locations = locationRepository.findByLatitudeBetweenAndLongitudeBetween(minLat, maxLat, minLon, maxLon);
+            locations = new ArrayList<>(locationRepository.findByLatitudeBetweenAndLongitudeBetween(minLat, maxLat, minLon, maxLon));
+
+            // Fetch POIs from Overpass API
+            List<Node> nodes = overpassService.fetchPOIs(minLat, minLon, maxLat, maxLon);
+            for (Node node : nodes) {
+                Location location = mapNodeToLocation(node);
+
+                locations.add(location);
+            }
         } else {
             locations = locationRepository.findAll();
         }
@@ -55,7 +73,16 @@ public class LocationController {
 
     // Get a location by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Location> getLocationById(@PathVariable Long id) {
+    public ResponseEntity<Location> getLocationById(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long externalId) {
+        if (id == 0) {
+            Optional<Node> node = overpassService.fetchPOI(externalId);
+            Optional<Location> location = node.map(LocationController::mapNodeToLocation);
+            return location
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        }
         return locationRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -104,5 +131,39 @@ public class LocationController {
 
         Comment savedComment = commentRepository.save(comment);
         return ResponseEntity.ok(savedComment);
+    }
+
+    private static Location mapNodeToLocation(Node node) {
+
+        Location location = new Location();
+        location.setId(0L); // Set to 0 to indicate an external (Overpass) location
+        location.setExternalId(node.getId());
+        location.setLatitude(node.getLat());
+        location.setLongitude(node.getLon());
+
+        Map<String, String> tags = node.getTags();
+
+        if (tags != null) {
+            location.setName(tags.getOrDefault("name", "Unknown"));
+            location.setAddress(tags.getOrDefault("addr:full", "Unknown"));
+            Set<Tag> tagList = new HashSet<>();
+            for (Map.Entry<String, String> entry : tags.entrySet()) {
+                Tag tag = new Tag();
+                String key = entry.getKey();
+                Tag.Type type;
+
+                try {
+                    type = Tag.Type.valueOf(key.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    type = Tag.Type.OTHER;
+                }
+                tag.setType(type);
+                tag.setName(entry.getValue());
+
+                tagList.add(tag);
+            }
+            location.setTags(tagList);
+        }
+        return location;
     }
 }

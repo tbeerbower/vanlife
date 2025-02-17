@@ -10,7 +10,8 @@
         <h1>{{ location.name }}</h1>
         <p>{{ location.description }}</p>
         <div v-if="location.photoUrls && location.photoUrls.length" class="location-images">
-          <img v-for="(photoUrl, index) in location.photoUrls" :key="index" :src="photoUrl" :alt="`Location Photo ${index + 1}`" />
+          <img v-for="(photoUrl, index) in location.photoUrls" :key="index" :src="photoUrl"
+            :alt="`Location Photo ${index + 1}`" />
         </div>
         <div class="location-info">
           <p><strong>Address:</strong> {{ location.address }}</p>
@@ -18,60 +19,51 @@
           <p><strong>Rating:</strong> {{ averageRating.toFixed(1) }} / 5</p>
         </div>
 
-        
+
       </div>
       <!-- Comments Section -->
       <div class="comments-section">
-          <h2>Comments</h2>
-          
-          <!-- Add Comment Form -->
-          <div v-if="isAuthenticated" class="add-comment-form">
-            <div class="rating-input">
-              <label>Rating:</label>
-              <div class="star-rating">
-                <span
-                  v-for="star in 5"
-                  :key="star"
-                  :class="{ active: star <= newComment.rating }"
-                  @click="newComment.rating = star"
-                  class="star"
-                >★</span>
-              </div>
-            </div>
-            <textarea
-              v-model="newComment.text"
-              placeholder="Share your experience..."
-              rows="3"
-              class="comment-textarea"
-            ></textarea>
-            <button @click="submitComment" class="submit-button" :disabled="!isValidComment">
-              Submit Comment
-            </button>
-          </div>
-          <div v-else class="login-prompt">
-            <p>Please <router-link to="/login">login</router-link> to leave a comment.</p>
-          </div>
+        <h2>Comments</h2>
 
-          <!-- Comments List -->
-          <div class="comments-list">
-            <div v-if="comments.length === 0" class="no-comments">
-              No comments yet. Be the first to share your experience!
+        <!-- Add Comment Form -->
+        <div v-if="isAuthenticated" class="add-comment-form">
+          <div class="rating-input">
+            <label>Rating:</label>
+            <div class="star-rating">
+              <span v-for="star in 5" :key="star" :class="{ active: star <= newComment.rating }"
+                @click="newComment.rating = star" class="star">★</span>
             </div>
-            <div v-else v-for="comment in sortedComments" :key="comment.id" class="comment-item">
-              <div class="comment-header">
-                <img :src="comment.user.picture" :alt="comment.user.name" class="user-avatar" />
-                <span class="user-name">{{ comment.user.name }}</span>
-                <div class="rating-display">
-                  <span v-for="star in 5" :key="star" class="star" :class="{ active: star <= comment.rating }">
-                    ★
-                  </span>
-                </div>
-                <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
+          </div>
+          <textarea v-model="newComment.text" placeholder="Share your experience..." rows="3"
+            class="comment-textarea"></textarea>
+          <button @click="submitComment" class="submit-button" :disabled="!isValidComment">
+            Submit Comment
+          </button>
+        </div>
+        <div v-else class="login-prompt">
+          <p>Please <router-link to="/login">login</router-link> to leave a comment.</p>
+        </div>
+
+        <!-- Comments List -->
+        <div class="comments-list">
+          <div v-if="comments.length === 0" class="no-comments">
+            No comments yet. Be the first to share your experience!
+          </div>
+          <div v-else v-for="comment in sortedComments" :key="comment.id" class="comment-item">
+            <div class="comment-header">
+              <img :src="comment.user.picture" :alt="comment.user.name" class="user-avatar" />
+              <span class="user-name">{{ comment.user.name }}</span>
+              <div class="rating-display">
+                <span v-for="star in 5" :key="star" class="star" :class="{ active: star <= comment.rating }">
+                  ★
+                </span>
               </div>
-              <p class="comment-text">{{ comment.text }}</p>
+              <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
             </div>
+            <p class="comment-text">{{ comment.text }}</p>
           </div>
         </div>
+      </div>
     </div>
   </div>
 </template>
@@ -107,7 +99,7 @@ export default {
   },
   computed: {
     sortedComments() {
-      return [...this.comments].sort((a, b) => 
+      return [...this.comments].sort((a, b) =>
         new Date(b.createdAt) - new Date(a.createdAt)
       );
     },
@@ -124,14 +116,23 @@ export default {
     const locationId = this.$route.params.id;
     this.fetchLocation(locationId);
     this.fetchComments(locationId);
-    
+
     // Initialize auth from token if needed
     this.$store.dispatch('auth/initializeFromToken');
   },
   methods: {
     async fetchLocation(locationId) {
       try {
-        const response = await api.get(`/locations/${locationId}`);
+        let url;
+
+        if (locationId.startsWith('X')) {
+          url = `/locations/0?externalId=${locationId.slice(1)}`;
+        } else {
+          url = `/locations/${locationId}`;
+        }
+
+        const response = await api.get(url);
+
         this.location = response.data;
       } catch (err) {
         this.error = err.message;
@@ -149,7 +150,7 @@ export default {
     },
     async submitComment() {
       if (!this.isValidComment) return;
-      
+
       try {
         const locationId = this.$route.params.id;
         const comment = await addComment(locationId, this.newComment.text, this.newComment.rating);
@@ -177,9 +178,9 @@ export default {
   display: grid;
   grid-template-columns: 2fr 3fr;
   grid-template-rows: 1fr 3fr;
-  grid-template-areas: 
-   "map details"
-   "map comments";
+  grid-template-areas:
+    "map details"
+    "map comments";
   gap: 20px;
   padding: 20px;
   height: 70vh;
@@ -195,13 +196,15 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden; /* Prevent scrolling of the main container */
+  overflow: hidden;
+  /* Prevent scrolling of the main container */
 }
 
 .location-details h1 {
   margin-top: 0;
   margin-bottom: 5px;
 }
+
 .location-details p {
   margin-top: 3px;
   margin-bottom: 3px;
@@ -214,25 +217,29 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Important for nested flex scrolling */
+  min-height: 0;
+  /* Important for nested flex scrolling */
 }
 
 
 .add-comment-form {
   margin-bottom: 20px;
-  flex-shrink: 0; /* Prevent form from shrinking */
+  flex-shrink: 0;
+  /* Prevent form from shrinking */
 }
 
 .comments-list {
   overflow-y: auto;
   flex: 1;
-  padding-right: 10px; /* Space for scrollbar */
+  padding-right: 10px;
+  /* Space for scrollbar */
 }
 
 .comment-item {
   padding: 15px;
   border-bottom: 1px solid #eee;
-  word-wrap: break-word; /* Ensure text wraps */
+  word-wrap: break-word;
+  /* Ensure text wraps */
   overflow-wrap: break-word;
 }
 
@@ -241,7 +248,8 @@ export default {
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
-  flex-wrap: wrap; /* Allow wrapping of header items */
+  flex-wrap: wrap;
+  /* Allow wrapping of header items */
 }
 
 .user-avatar {
@@ -249,30 +257,35 @@ export default {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  flex-shrink: 0; /* Prevent avatar from shrinking */
+  flex-shrink: 0;
+  /* Prevent avatar from shrinking */
 }
 
 .user-name {
   font-weight: bold;
-  margin-right: auto; /* Push rating and date to the right */
+  margin-right: auto;
+  /* Push rating and date to the right */
 }
 
 .comment-date {
   color: #666;
   font-size: 0.9em;
-  white-space: nowrap; /* Keep date on one line */
+  white-space: nowrap;
+  /* Keep date on one line */
 }
 
 .rating-display {
   display: flex;
   gap: 2px;
-  flex-shrink: 0; /* Prevent stars from shrinking */
+  flex-shrink: 0;
+  /* Prevent stars from shrinking */
 }
 
 .comment-text {
   margin: 0;
   line-height: 1.5;
-  white-space: pre-wrap; /* Preserve line breaks while wrapping */
+  white-space: pre-wrap;
+  /* Preserve line breaks while wrapping */
 }
 
 .rating-input {
@@ -301,7 +314,8 @@ export default {
   border-radius: 4px;
   margin-bottom: 10px;
   font-family: inherit;
-  resize: vertical; /* Allow vertical resizing only */
+  resize: vertical;
+  /* Allow vertical resizing only */
 }
 
 .submit-button {

@@ -3,7 +3,6 @@
         <div class="map-section">
             <MapComponent 
                 :locations="locations" 
-                @location-click="handleLocationClick"
                 @refresh-locations="fetchLocationsInBounds"
             />
         </div>
@@ -12,7 +11,7 @@
                 v-for="location in locations" 
                 :key="location.id" 
                 class="location-card"
-                @click="navigateToLocation(location.id)"
+                @click="navigateToLocation(location.id, location.externalId)"
             >
                 <div class="location-image" :style="{ backgroundImage: `url(${location.photoUrls?.[0] || '/placeholder-image.jpg'})` }"></div>
                 <div class="location-content">
@@ -55,8 +54,9 @@ export default {
     methods: {
         async fetchLocations() {
             try {
-                const response = await api.get('/locations');
-                this.locations = response.data;
+                // TODO: Getting a single location by ID as a starting point for now
+                const response = await api.get('/locations/1');
+                this.locations = [response.data];
             } catch (error) {
                 console.error('Error fetching locations:', error);
             }
@@ -83,11 +83,15 @@ export default {
             const sum = ratings.reduce((acc, rating) => acc + rating.score, 0);
             return sum / ratings.length;
         },
-        handleLocationClick(locationId) {
-            this.navigateToLocation(locationId);
-        },
-        navigateToLocation(locationId) {
+        navigateToLocation(locationId, externalId) {
+            console.log('Navigating to location:', locationId, externalId);
+            if (locationId == 0) {
+                // External location
+                console.log('Navigating to external location:', externalId);
+                this.$router.push({ name: 'LocationView', params: { id: 'X' + externalId } });
+            } else {
             this.$router.push({ name: 'LocationView', params: { id: locationId } });
+            }
         },
     },
     created() {
